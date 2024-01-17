@@ -1,12 +1,9 @@
-"""Open-Meteo API client based on the requests library"""
-""" Modified:
+"""Open-Meteo API client based on the requests library
 Changes made:
 - Added proxy support for improved data retrieval.
 """
 from __future__ import annotations
-
 from typing import TypeVar
-
 import requests
 from openmeteo_sdk.WeatherApiResponse import WeatherApiResponse
 
