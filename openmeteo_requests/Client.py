@@ -1,5 +1,8 @@
 """Open-Meteo API client based on the requests library"""
-
+""" Modified:
+Changes made:
+- Added proxy support for improved data retrieval.
+"""
 from __future__ import annotations
 
 from typing import TypeVar
@@ -21,10 +24,12 @@ class Client:
     def __init__(self, session: TSession | None = None):
         self.session = session or requests.Session()
 
-    def _get(self, cls: type[T], url: str, params: any) -> list[T]:
+    def _get(self, cls: type[T], url: str, params: any, proxies: any) -> list[T]:
         params["format"] = "flatbuffers"
-
-        response = self.session.get(url, params=params)
+        if proxies:
+            response = self.session.get(url, params=params, proxies=proxies, verify=False)
+        else:
+            response = self.session.get(url, params=params)
         if response.status_code in [400, 429]:
             response_body = response.json()
             raise OpenMeteoRequestsError(response_body)
@@ -42,10 +47,11 @@ class Client:
             pos += length + 4
         return messages
 
-    def weather_api(self, url: str, params: any) -> list[WeatherApiResponse]:
+    def weather_api(self, url: str, params: any, proxies: any = None) -> list[WeatherApiResponse]:
         """Get and decode as weather api"""
-        return self._get(WeatherApiResponse, url, params)
+        return self._get(WeatherApiResponse, url, params, proxies)
 
     def __del__(self):
         """cleanup"""
         self.session.close()
+
