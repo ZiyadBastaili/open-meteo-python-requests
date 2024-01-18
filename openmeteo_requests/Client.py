@@ -1,11 +1,13 @@
 """Open-Meteo API client based on the requests library
 Changes made:
 - Added proxy support for improved data retrieval.
+- Added Amazon API Gateway.
 """
 from __future__ import annotations
 from typing import TypeVar
 import requests
 from openmeteo_sdk.WeatherApiResponse import WeatherApiResponse
+from urllib.parse import urlparse
 
 T = TypeVar("T")
 TSession = TypeVar("TSession", bound=requests.Session)
@@ -21,9 +23,14 @@ class Client:
     def __init__(self, session: TSession | None = None):
         self.session = session or requests.Session()
 
-    def _get(self, cls: type[T], url: str, params: any, proxies: any) -> list[T]:
+    def _get(self, cls: type[T], url: str, params: any, proxies: any, gateway: any) -> list[T]:
         params["format"] = "flatbuffers"
-        if proxies:
+        if gateway:
+            src_parsed = urlparse(api_endpoint_historical)
+            src_no_path = "%s://%s" % (src_parsed.scheme, src_parsed.netloc)
+            self.session.mount(src_no_path, gateway)
+            response = self.session.get(url, params=params)
+        elif proxies:
             response = self.session.get(url, params=params, proxies=proxies, verify=False)
         else:
             response = self.session.get(url, params=params)
@@ -44,11 +51,10 @@ class Client:
             pos += length + 4
         return messages
 
-    def weather_api(self, url: str, params: any, proxies: any = None) -> list[WeatherApiResponse]:
+    def weather_api(self, url: str, params: any, proxies: any = None, gateway: any = None) -> list[WeatherApiResponse]:
         """Get and decode as weather api"""
-        return self._get(WeatherApiResponse, url, params, proxies)
+        return self._get(WeatherApiResponse, url, params, proxies, gateway)
 
     def __del__(self):
         """cleanup"""
         self.session.close()
-
